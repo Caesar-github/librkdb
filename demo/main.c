@@ -49,12 +49,12 @@ void select_data(void)
 {
     int i;
     {
-        json_object *j_array = rkdb_select(USERINFO_TABLE, NULL, NULL);
+        json_object *j_array = rkdb_select(USERINFO_TABLE, NULL, NULL, NULL, NULL);
         printf_json_array(j_array);
         json_object_put(j_array);
     }
     {
-        json_object *j_array = rkdb_select(USERINFO_TABLE, "sUserName,iAge", "iAge>18");
+        json_object *j_array = rkdb_select(USERINFO_TABLE, "sUserName,iAge", "iAge>18", NULL, NULL);
         printf_json_array(j_array);
         json_object_put(j_array);
     }
