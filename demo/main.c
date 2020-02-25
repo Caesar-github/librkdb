@@ -8,25 +8,26 @@
 #include <ctype.h>
 #include <inttypes.h>
 
+#include <glib.h>
 #include "json-c/json.h"
 #include "rkdb.h"
 
 #define USERINFO_TABLE    "userinfo"
 
-void creat_table(void)
+void create_table(void)
 {
     char *col_para = "iID INTEGER PRIMARY KEY AUTOINCREMENT," \
                      "sUserName TEXT NOT NULL UNIQUE," \
                      "sPwd TEXT DEFAULT ''," \
                      "iAge INT DEFAULT 0);";
 
-    rkdb_creat(USERINFO_TABLE, col_para);
+    g_free(rkdb_create(USERINFO_TABLE, col_para));
 }
 
 void insert_data(void)
 {
-    rkdb_insert(USERINFO_TABLE, "sUserName,sPwd,iAge", "'hello','123456',20");
-    rkdb_insert(USERINFO_TABLE, "sUserName,sPwd,iAge", "'abc','223344',16");
+    g_free(rkdb_insert(USERINFO_TABLE, "sUserName,sPwd,iAge", "'hello','123456',20"));
+    g_free(rkdb_insert(USERINFO_TABLE, "sUserName,sPwd,iAge", "'abc','223344',16"));
 }
 
 void printf_json_array(json_object *j_array)
@@ -49,33 +50,39 @@ void select_data(void)
 {
     int i;
     {
-        json_object *j_array = rkdb_select(USERINFO_TABLE, NULL, NULL, NULL, NULL);
+        char *json_str = rkdb_select(USERINFO_TABLE, NULL, NULL, NULL, NULL);
+        json_object *j_ret = json_tokener_parse(json_str);
+        json_object *j_array = json_object_object_get(j_ret, "jData");
         printf_json_array(j_array);
-        json_object_put(j_array);
+        json_object_put(j_ret);
+        g_free(json_str);
     }
     {
-        json_object *j_array = rkdb_select(USERINFO_TABLE, "sUserName,iAge", "iAge>18", NULL, NULL);
+        char *json_str = rkdb_select(USERINFO_TABLE, "sUserName,iAge", "iAge>18", NULL, NULL);
+        json_object *j_ret = json_tokener_parse(json_str);
+        json_object *j_array = json_object_object_get(j_ret, "jData");
         printf_json_array(j_array);
-        json_object_put(j_array);
+        json_object_put(j_ret);
+        g_free(json_str);
     }
 }
 
 void update_data(void)
 {
-    rkdb_update(USERINFO_TABLE, "iAge=21", "sUserName='hello' and sPwd='123456'");
-    rkdb_update(USERINFO_TABLE, "sPwd='666666',iAge=17", "sUserName='abc'");
+    g_free(rkdb_update(USERINFO_TABLE, "iAge=21", "sUserName='hello' and sPwd='123456'"));
+    g_free(rkdb_update(USERINFO_TABLE, "sPwd='666666',iAge=17", "sUserName='abc'"));
 }
 
 void delete_data(void)
 {
-    rkdb_delete(USERINFO_TABLE, "sUserName='hello'");
-    rkdb_delete(USERINFO_TABLE, "iAge=17");
+    g_free(rkdb_delete(USERINFO_TABLE, "sUserName='hello'"));
+    g_free(rkdb_delete(USERINFO_TABLE, "iAge=17"));
 }
 
 int main( int argc , char ** argv)
 {
     rkdb_init("/userdata/rkdbdemo.db");
-    creat_table();
+    create_table();
     insert_data();
     select_data();
     update_data();

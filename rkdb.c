@@ -26,101 +26,89 @@ static int callback(void *param, int argc, char **argv, char **azColName)
     return 0;
 }
 
-int rkdb_creat(char *table, char *col_para)
+char *rkdb_sql(char *sql)
 {
-    int ret = -1;
     int rc;
-    char *sql;
     char *zErrMsg = 0;
+    json_object *j_cfg = json_object_new_object();
+    json_object *j_array = json_object_new_array();
 
-    sql = g_strdup_printf("CREATE TABLE %s(%s);", table, col_para);
-
-    rc = sqlite3_exec(db, sql, 0, 0, &zErrMsg);
+    rc = sqlite3_exec(db, sql, callback, (void*)j_array, &zErrMsg);
+    json_object_object_add(j_cfg, "iReturn", json_object_new_int(rc));
     if (rc != SQLITE_OK) {
-        printf("created %s Table fail err: %s\n", table, zErrMsg);
+        printf("SQL error: %s\n", zErrMsg);
+        json_object_object_add(j_cfg, "sErrMsg", json_object_new_string(zErrMsg));
         sqlite3_free(zErrMsg);
     } else {
-        //printf("created %s Table successfully\n", table);
-        ret = 0;
+        json_object_object_add(j_cfg, "sErrMsg", json_object_new_string(""));
+        //printf("Operation done successfully\n");
     }
+    json_object_object_add(j_cfg, "jData", j_array);
+    char *ret = g_strdup((char *)json_object_get_string(j_cfg));
+    json_object_put(j_cfg);
+
+    return ret;
+}
+
+char *rkdb_drop(char *table)
+{
+    char *sql = g_strdup_printf("DROP TABLE %s;", table);
+
+    char *ret = rkdb_sql(sql);
     g_free(sql);
 
     return ret;
 }
 
-int rkdb_insert(char *table, char *cols, char *vals)
+char *rkdb_create(char *table, char *col_para)
 {
-    int ret = -1;
-    int rc;
-    char *sql;
-    char *zErrMsg = 0;
+    char *sql = g_strdup_printf("CREATE TABLE %s(%s);", table, col_para);
 
-    sql = g_strdup_printf("INSERT INTO %s (%s) VALUES (%s);", table, cols, vals);
-    rc = sqlite3_exec(db, sql, 0, 0, &zErrMsg);
-    if (rc != SQLITE_OK) {
-        printf("%s Insert data fail err: %s\n", table, zErrMsg);
-        sqlite3_free(zErrMsg);
-    } else {
-        //printf("%s Insert data successfully\n", table);
-        ret = 0;
-    }
+    char *ret = rkdb_sql(sql);
     g_free(sql);
 
     return ret;
 }
 
-int rkdb_update(char *table, char *set, char *where)
+char *rkdb_insert(char *table, char *cols, char *vals)
 {
-    int ret = -1;
-    int rc;
-    char *sql;
-    char *zErrMsg = 0;
+    char *sql = g_strdup_printf("INSERT INTO %s (%s) VALUES (%s);", table, cols, vals);
 
-    sql = g_strdup_printf("UPDATE %s SET %s WHERE %s;", table, set, where);
-    rc = sqlite3_exec(db, sql, 0, 0, &zErrMsg);
-    if (rc != SQLITE_OK) {
-        printf("%s update data fail err: %s\n", table, zErrMsg);
-        sqlite3_free(zErrMsg);
-    } else {
-        //printf("%s update data successfully\n", table);
-        ret = 0;
-    }
+    char *ret = rkdb_sql(sql);
     g_free(sql);
 
     return ret;
 }
 
-int rkdb_delete(char *table, char *where)
+char *rkdb_update(char *table, char *set, char *where)
 {
-    int ret = -1;
-    int rc;
+    char *sql = g_strdup_printf("UPDATE %s SET %s WHERE %s;", table, set, where);
+
+    char *ret = rkdb_sql(sql);
+    g_free(sql);
+
+    return ret;
+}
+
+char *rkdb_delete(char *table, char *where)
+{
     char *sql;
-    char *zErrMsg = 0;
 
     if (where)
         sql = g_strdup_printf("DELETE from %s WHERE %s;", table, where);
     else
         sql = g_strdup_printf("DELETE from %s;", table);
-    rc = sqlite3_exec(db, sql, 0, 0, &zErrMsg);
-    if (rc != SQLITE_OK) {
-        printf("%s delete data fail err: %s\n", table, zErrMsg);
-        sqlite3_free(zErrMsg);
-    } else {
-        //printf("%s delete data successfully\n", table);
-        ret = 0;
-    }
+
+    char *ret = rkdb_sql(sql);
     g_free(sql);
 
     return ret;
 }
 
-json_object *rkdb_select(char *table, char *colname, char *where, char *order, char *limit)
+char *rkdb_select(char *table, char *colname, char *where, char *order, char *limit)
 {
     char *sql = NULL;
     char *tmp;
-    int rc;
-    char *zErrMsg = 0;
-    json_object *j_array = json_object_new_array();
 
     if (colname)
         sql = g_strdup_printf("SELECT %s from %s", colname, table);
@@ -145,17 +133,10 @@ json_object *rkdb_select(char *table, char *colname, char *where, char *order, c
         g_free(tmp);
     }
 
-    rc = sqlite3_exec(db, sql, callback, (void*)j_array, &zErrMsg);
-    if (rc != SQLITE_OK) {
-        printf("SQL error: %s\n", zErrMsg);
-        sqlite3_free(zErrMsg);
-    } else {
-        //printf("Operation done successfully\n");
-    }
+    char *ret = rkdb_sql(sql);
     g_free(sql);
-    //printf("%s %s\n", __func__, (char *)json_object_get_string(j_array));
 
-    return j_array;
+    return ret;
 }
 
 int rkdb_init(char *file)
