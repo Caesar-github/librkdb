@@ -31,7 +31,7 @@ install(FILES rkdb.h
 include_directories(
 	${PROJECT_SOURCE_DIR}/./)
 
-option(LIBRKDB_EXAMPLE_BUILD  "Build tests executables" ON)
+option(LIBRKDB_EXAMPLE_BUILD  "Build tests executables" OFF)
 if (${LIBRKDB_EXAMPLE_BUILD})
 
 add_executable(rkdb_demo demo/main.c)
